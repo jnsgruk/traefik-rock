@@ -20,6 +20,13 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/bin
       cp traefik $CRAFT_PART_INSTALL/usr/bin/traefik
 
+  default-pebble-layer:
+    plugin: dump
+    source: .
+    override-build: |
+      mkdir -p $CRAFT_PART_INSTALL/var/lib/pebble/default/layers
+      cp 001-default.yaml $CRAFT_PART_INSTALL/var/lib/pebble/default/layers/001-default.yaml
+
   non-root-user:
     plugin: nil
     overlay-script: |

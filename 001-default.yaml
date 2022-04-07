@@ -1,0 +1,13 @@
+summary: Initial Traefik config
+description: |
+  A simple Pebble layer included with the underlying ROCK that can be used to start and test the
+  Traefik instance within.
+services:
+  traefik:
+    override: replace
+    command: /usr/bin/traefik
+    startup: enabled
+    user: traefik
+    group: traefik
+    environment:
+      TRAEFIK_LOG_LEVEL: DEBUG
