@@ -1,0 +1,13 @@
+log:
+  level: DEBUG
+
+providers:
+  file:
+    directory: /etc/traefik
+    watch: true
+
+entryPoints:
+  web:
+    address: ":8080"
+  websecure:
+    address: ":8081"

@@ -5,7 +5,6 @@ description: |
 services:
   traefik:
     override: replace
-    command: /usr/bin/traefik
+    command: /usr/bin/traefik --configFile=/etc/traefik/traefik.yaml
     startup: enabled
-    environment:
-      TRAEFIK_LOG_LEVEL: DEBUG
+    user: traefik

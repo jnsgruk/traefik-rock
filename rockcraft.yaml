@@ -7,6 +7,8 @@ parts:
     plugin: go
     source: https://github.com/canonical/pebble.git
     source-commit: "32ead042e94714625a138e61f7223c68cd6326f4"
+    build-snaps:
+      - go/1.17/stable
     # Override until this issue is fixed: https://github.com/canonical/rockcraft/issues/21
     override-build: |
       mkdir -p $CRAFT_PART_INSTALL/usr/bin
@@ -21,16 +23,18 @@ parts:
     stage:
       - usr/bin/traefik
 
-  default-pebble-layer:
+  default-config:
     plugin: dump
     source: files
     organize:
+      traefik.yaml: etc/traefik/traefik.yaml
       001-default.yaml: var/lib/pebble/default/layers/001-default.yaml
+    stage:
+      - etc/traefik/traefik.yaml
+      - var/lib/pebble/default/layers/001-default.yaml
 
   non-root-user:
     plugin: nil
     overlay-script: |
       chroot $CRAFT_OVERLAY
       useradd -M -r traefik
-      mkdir /etc/traefik
-      chown -R traefik:traefik /etc/traefik

@@ -30,7 +30,6 @@ $ docker run --rm --entrypoint pebble -it traefik:2.6.3 run -v
 
 ## Broken things
 
-- [ ] Start traefik as non-root user using Pebble
 - [ ] Cannot set an entrypoint
 - [ ] Cannot set labels
 - [ ] Override the `go` plugin install to avoid clobbering `/bin`
