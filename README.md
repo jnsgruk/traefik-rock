@@ -15,10 +15,20 @@ $ sudo snap install skopeo --edge --devmode
 $ rockcraft pack
 
 # Import the ROCK into the local docker image cache
-$ sudo skopeo --insecure-policy copy oci-archive:traefik_2.6.3.rock docker-daemon:traefik:2.6.3
+$ sudo skopeo \
+    --insecure-policy copy \
+    oci-archive:traefik_2.6.3.rock \
+    docker-daemon:traefik:2.6.3
 
-# Run the image, invoking Traefik and showing the version
-$ sudo docker run --rm --entrypoint /usr/bin/traefik -it traefik:2.6.3 version
+# Run the image, invoking Traefik as the traefik user (with debug logging)
+$ sudo docker run \
+      --rm \
+      --entrypoint /usr/bin/traefik \
+      --user traefik \
+      --interactive \
+      --tty \
+      traefik:2.6.3 \
+      -log.level=DEBUG
 ```
 
 ## Broken things
