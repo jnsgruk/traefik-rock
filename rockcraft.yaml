@@ -18,6 +18,8 @@ parts:
     source-checksum: sha256/8454a61230cc847b865e86cb3a4ca321fe159ccb931a5bea31dc17192d593aa1
     organize:
       traefik: usr/bin/traefik
+    stage:
+      - usr/bin/traefik
 
   default-pebble-layer:
     plugin: dump
