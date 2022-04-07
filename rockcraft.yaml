@@ -80,6 +80,7 @@ parts:
   create-user:
     plugin: nil
     overlay-script: |
+      chroot $CRAFT_OVERLAY
       useradd -M -r traefik
       mkdir /etc/traefik
       chown -R traefik:traefik /etc/traefik
