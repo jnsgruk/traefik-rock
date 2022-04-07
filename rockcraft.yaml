@@ -12,75 +12,13 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/bin
       go build -o $CRAFT_PART_INSTALL/usr/bin/pebble ./cmd/pebble
 
-  traefik-webui:
-    plugin: dump
-    source: https://github.com/traefik/traefik.git
-    source-tag: v2.6.3
-
-    build-packages:
-      - apt-transport-https
-      - lsb-release
-      - python2
-      - gnupg
-      - curl
-
-    build-environment:
-      - PLATFORM_URL: "https://pilot.traefik.io"
-      - TRAEFIK_VERSION: "2.6.3"
-
-    override-build: |
-      # Install nodejs 14. Skip this when there is an npm plugin
-      REPO="https://deb.nodesource.com/node_14.x"
-      KEYRING="/usr/share/keyrings/nodesource.gpg"
-      echo "deb [signed-by=$KEYRING] $REPO focal main" > /etc/apt/sources.list.d/nodesource.list
-      curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee $KEYRING >/dev/null
-      apt-get update
-      apt-get install -y nodejs
-
-      # Install node deps; build the web ui
-      cd webui/
-      npm ci
-      npm run build:nc
-
-      cp -r dist $CRAFT_PART_INSTALL
-
   traefik:
-    after: [traefik-webui]
     plugin: dump
-    source: https://github.com/traefik/traefik.git
-    source-tag: v2.6.3
-
-    build-snaps: [yq]
-
-    build-environment:
-      - TRAEFIK_VERSION: "2.6.3"
-      - GO111MODULE: "on"
-      - CGO_ENABLED: 0
-      - GOGC: "off"
-
+    source: https://github.com/traefik/traefik/releases/download/v2.6.3/traefik_v2.6.3_linux_amd64.tar.gz
+    source-checksum: sha256/8454a61230cc847b865e86cb3a4ca321fe159ccb931a5bea31dc17192d593aa1
     override-build: |
-      # Grab the built web ui from the staging area
-      cp -r $CRAFT_STAGE/dist webui/dist
-
-      # Parse the release codename from semaphore.yml
-      CODENAME=$(\
-        yq e \
-        '.blocks[] | select(.name=="Release").task.env_vars[] | select(.name=="CODENAME").value' \
-        .semaphore/semaphore.yml \
-      )
-
-      # Create the directory to output the binary into
       mkdir -p $CRAFT_PART_INSTALL/usr/bin
-
-      # Required to merge non-code components into the final binary such as the web dashboard/UI
-      go generate
-
-      # Build Traefik per https://github.com/traefik/traefik/raw/v2.6.1/script/binary
-      go build -ldflags "-s -w \
-        -X github.com/traefik/traefik/v2/pkg/version.Version=$TRAEFIK_VERSION \
-        -X github.com/traefik/traefik/v2/pkg/version.Codename=$CODENAME \
-        -X github.com/traefik/traefik/v2/pkg/version.BuildDate=$(date -u '+%Y-%m-%d_%I:%M:%S%p')" \
-        -a -installsuffix nocgo -o $CRAFT_PART_INSTALL/usr/bin/traefik ./cmd/traefik
+      cp traefik $CRAFT_PART_INSTALL/usr/bin/traefik
 
   non-root-user:
     plugin: nil
