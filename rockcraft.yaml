@@ -62,7 +62,7 @@ parts:
         .semaphore/semaphore.yml \
       )
 
-      mkdir -p dist
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin
 
       # Required to merge non-code components into the final binary such as the web dashboard/UI
       go generate
@@ -70,12 +70,9 @@ parts:
       # Build Traefik per https://github.com/traefik/traefik/raw/v2.6.1/script/binary
       go build -ldflags "-s -w \
         -X github.com/traefik/traefik/v2/pkg/version.Version=$TRAEFIK_VERSION \
-        -X github.com/traefik/traefik/v2/pkg/version.Codename=$(cat $CODENAME) \
+        -X github.com/traefik/traefik/v2/pkg/version.Codename=$CODENAME \
         -X github.com/traefik/traefik/v2/pkg/version.BuildDate=$(date -u '+%Y-%m-%d_%I:%M:%S%p')" \
-        -a -installsuffix nocgo -o dist/traefik ./cmd/traefik
-
-      mkdir -p $CRAFT_PART_INSTALL/usr/bin
-      cp dist/traefik $CRAFT_PART_INSTALL/usr/bin/traefik
+        -a -installsuffix nocgo -o $CRAFT_PART_INSTALL/usr/bin/traefik ./cmd/traefik
 
   create-user:
     plugin: nil
