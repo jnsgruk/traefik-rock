@@ -1,49 +1,56 @@
-# Rockcraft equivalent of https://github.com/jnsgruk/traefik-oci-image/blob/main/Dockerfile
-#
-
 name: traefik
 version: "2.6.3"
 base: ubuntu:20.04
 
 parts:
-  build-dashboard:
+  pebble:
+    plugin: go
+    source: https://github.com/canonical/pebble.git
+    source-commit: "32ead042e94714625a138e61f7223c68cd6326f4"
+    # Override until this issue is fixed: https://github.com/canonical/rockcraft/issues/21
+    override-build: |
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin
+      go build -o $CRAFT_PART_INSTALL/usr/bin/pebble ./cmd/pebble
+
+  traefik-webui:
     plugin: dump
-    source: https://github.com/traefik/traefik
-    source-type: git
-    #  source-branch: v2.6.3
-    #  source-subdir: webui
+    source: https://github.com/traefik/traefik.git
+    source-tag: v2.6.3
 
     build-packages:
-      # Required for building node-gyp
+      - apt-transport-https
+      - lsb-release
       - python2
+      - gnupg
       - curl
 
     build-environment:
-      - TRAEFIK_VERSION: "2.6.3"
       - PLATFORM_URL: "https://pilot.traefik.io"
+      - TRAEFIK_VERSION: "2.6.3"
 
     override-build: |
-      curl -sL https://deb.nodesource.com/setup_14.x | bash -
+      # Install nodejs 14. Skip this when there is an npm plugin
+      REPO="https://deb.nodesource.com/node_14.x"
+      KEYRING="/usr/share/keyrings/nodesource.gpg"
+      echo "deb [signed-by=$KEYRING] $REPO focal main" > /etc/apt/sources.list.d/nodesource.list
+      curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee $KEYRING >/dev/null
+      apt-get update
       apt-get install -y nodejs
 
-      git checkout v$TRAEFIK_VERSION 
+      # Install node deps; build the web ui
       cd webui/
-
-      npm install
+      npm ci
       npm run build:nc
 
       cp -r dist $CRAFT_PART_INSTALL
 
-  build-traefik:
-    after: [build-dashboard]
+  traefik:
+    after: [traefik-webui]
     plugin: dump
-    source: https://github.com/traefik/traefik
-    source-type: git
-    source-branch: v2.6.3
+    source: https://github.com/traefik/traefik.git
+    source-tag: v2.6.3
 
-    build-snaps:
-      - go/1.17/stable
-      - yq
+    build-snaps: [yq]
 
     build-environment:
       - TRAEFIK_VERSION: "2.6.3"
@@ -52,16 +59,17 @@ parts:
       - GOGC: "off"
 
     override-build: |
-      git checkout v$TRAEFIK_VERSION
-
+      # Grab the built web ui from the staging area
       cp -r $CRAFT_STAGE/dist webui/dist
 
+      # Parse the release codename from semaphore.yml
       CODENAME=$(\
         yq e \
         '.blocks[] | select(.name=="Release").task.env_vars[] | select(.name=="CODENAME").value' \
         .semaphore/semaphore.yml \
       )
 
+      # Create the directory to output the binary into
       mkdir -p $CRAFT_PART_INSTALL/usr/bin
 
       # Required to merge non-code components into the final binary such as the web dashboard/UI
@@ -74,7 +82,7 @@ parts:
         -X github.com/traefik/traefik/v2/pkg/version.BuildDate=$(date -u '+%Y-%m-%d_%I:%M:%S%p')" \
         -a -installsuffix nocgo -o $CRAFT_PART_INSTALL/usr/bin/traefik ./cmd/traefik
 
-  create-user:
+  non-root-user:
     plugin: nil
     overlay-script: |
       chroot $CRAFT_OVERLAY
