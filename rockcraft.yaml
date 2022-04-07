@@ -1,0 +1,85 @@
+# Rockcraft equivalent of https://github.com/jnsgruk/traefik-oci-image/blob/main/Dockerfile
+#
+
+name: traefik
+version: "2.6.3"
+base: ubuntu:20.04
+
+parts:
+  build-dashboard:
+    plugin: dump
+    source: https://github.com/traefik/traefik
+    source-type: git
+    #  source-branch: v2.6.3
+    #  source-subdir: webui
+
+    build-packages:
+      # Required for building node-gyp
+      - python2
+      - curl
+
+    build-environment:
+      - TRAEFIK_VERSION: "2.6.3"
+      - PLATFORM_URL: "https://pilot.traefik.io"
+
+    override-build: |
+      curl -sL https://deb.nodesource.com/setup_14.x | bash -
+      apt-get install -y nodejs
+
+      git checkout v$TRAEFIK_VERSION 
+      cd webui/
+
+      npm install
+      npm run build:nc
+
+      cp -r dist $CRAFT_PART_INSTALL
+
+  build-traefik:
+    after: [build-dashboard]
+    plugin: dump
+    source: https://github.com/traefik/traefik
+    source-type: git
+    source-branch: v2.6.3
+
+    build-snaps:
+      - go/1.17/stable
+      - yq
+
+    build-environment:
+      - TRAEFIK_VERSION: "2.6.3"
+      - GO111MODULE: "on"
+      - CGO_ENABLED: 0
+      - GOGC: "off"
+
+    override-build: |
+      git checkout v$TRAEFIK_VERSION
+
+      cp -r $CRAFT_STAGE/dist webui/dist
+
+      CODENAME=$(\
+        yq e \
+        '.blocks[] | select(.name=="Release").task.env_vars[] | select(.name=="CODENAME").value' \
+        .semaphore/semaphore.yml \
+      )
+
+      mkdir -p dist
+
+      # Required to merge non-code components into the final binary such as the web dashboard/UI
+      go generate
+
+      # Build Traefik per https://github.com/traefik/traefik/raw/v2.6.1/script/binary
+      go build -ldflags "-s -w \
+        -X github.com/traefik/traefik/v2/pkg/version.Version=$TRAEFIK_VERSION \
+        -X github.com/traefik/traefik/v2/pkg/version.Codename=$(cat $CODENAME) \
+        -X github.com/traefik/traefik/v2/pkg/version.BuildDate=$(date -u '+%Y-%m-%d_%I:%M:%S%p')" \
+        -a -installsuffix nocgo -o dist/traefik ./cmd/traefik
+
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin
+      cp dist/traefik $CRAFT_PART_INSTALL/usr/bin/traefik
+
+  create-user:
+    plugin: nil
+    overlay-script: |
+      useradd -M -r traefik
+      mkdir /etc/traefik
+      chown -R traefik:traefik /etc/traefik
