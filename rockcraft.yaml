@@ -16,16 +16,14 @@ parts:
     plugin: dump
     source: https://github.com/traefik/traefik/releases/download/v2.6.3/traefik_v2.6.3_linux_amd64.tar.gz
     source-checksum: sha256/8454a61230cc847b865e86cb3a4ca321fe159ccb931a5bea31dc17192d593aa1
-    override-build: |
-      mkdir -p $CRAFT_PART_INSTALL/usr/bin
-      cp traefik $CRAFT_PART_INSTALL/usr/bin/traefik
+    organize:
+      traefik: usr/bin/traefik
 
   default-pebble-layer:
     plugin: dump
-    source: .
-    override-build: |
-      mkdir -p $CRAFT_PART_INSTALL/var/lib/pebble/default/layers
-      cp 001-default.yaml $CRAFT_PART_INSTALL/var/lib/pebble/default/layers/001-default.yaml
+    source: files
+    organize:
+      001-default.yaml: var/lib/pebble/default/layers/001-default.yaml
 
   non-root-user:
     plugin: nil

@@ -7,7 +7,5 @@ services:
     override: replace
     command: /usr/bin/traefik
     startup: enabled
-    user: traefik
-    group: traefik
     environment:
       TRAEFIK_LOG_LEVEL: DEBUG
