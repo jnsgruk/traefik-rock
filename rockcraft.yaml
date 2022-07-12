@@ -1,6 +1,12 @@
 name: traefik
-version: "2.6.3"
+summary: Traefik ROCK
+description: Traefik ROCK
+license: Apache-2.0
+
+version: "2.8.1"
 base: ubuntu:20.04
+
+entrypoint: ["/usr/bin/traefik"]
 
 parts:
   pebble:
@@ -17,8 +23,8 @@ parts:
 
   traefik:
     plugin: dump
-    source: https://github.com/traefik/traefik/releases/download/v2.6.3/traefik_v2.6.3_linux_amd64.tar.gz
-    source-checksum: sha256/8454a61230cc847b865e86cb3a4ca321fe159ccb931a5bea31dc17192d593aa1
+    source: https://github.com/traefik/traefik/releases/download/v2.8.1/traefik_v2.8.1_linux_amd64.tar.gz
+    source-checksum: sha256/f3547b9579c102d82542e85261056be2a31b0b8f14b1a3852073b707c0ee1153
     organize:
       traefik: usr/bin/traefik
     stage:
@@ -33,9 +39,15 @@ parts:
     stage:
       - etc/traefik/traefik.yaml
       - var/lib/pebble/default/layers/001-default.yaml
+    override-prime: |
+      craftctl default
+      ls -l etc/
+      chown -R 1000:1000 etc/traefik
+      ls -l etc/
 
   non-root-user:
     plugin: nil
+    after: [default-config]
     overlay-script: |
-      chroot $CRAFT_OVERLAY
-      useradd -M -r traefik
+      # Create a user in the $CRAFT_OVERLAY chroot
+      useradd -R $CRAFT_OVERLAY -M -r -u 1000 -U traefik

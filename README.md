@@ -22,14 +22,14 @@ $ rockcraft pack
 # `docker` group, or the commands will fail.
 
 # Import the ROCK into the local docker image cache
-$ skopeo --insecure-policy copy oci-archive:traefik_2.6.3.rock docker-daemon:traefik:2.6.3
+$ skopeo --insecure-policy copy oci-archive:traefik_2.8.1.rock docker-daemon:traefik:2.8.1
 
 # Run the image, invoking Traefik through pebble
-$ docker run --rm --entrypoint pebble -it traefik:2.6.3 run -v
+$ docker run --rm --entrypoint pebble -it traefik:2.8.1 run -v
 ```
 
 ## Broken things
 
-- [ ] Cannot set an entrypoint
+- [x] Cannot set an entrypoint
 - [ ] Cannot set labels
 - [ ] Override the `go` plugin install to avoid clobbering `/bin`
